@@ -16,6 +16,7 @@ import android.view.Choreographer;
 import com.facebook.common.logging.FLog;
 import com.facebook.react.bridge.UiThreadUtil;
 import com.facebook.infer.annotation.Assertions;
+import com.facebook.react.common.ChoreographerCompat;
 import com.facebook.react.common.ReactConstants;
 
 /**
@@ -69,23 +70,36 @@ public class ReactChoreographer {
     return sInstance;
   }
 
-  private final Choreographer mChoreographer;
-  private final ReactChoreographerDispatcher mReactChoreographerDispatcher;
-  private final ArrayDeque<Choreographer.FrameCallback>[] mCallbackQueues;
+  private final ChoreographerCompat mChoreographer;
+  private final ChoreographerCompat.FrameCallback mReactChoreographerDispatcher;
+  private final ArrayDeque<ChoreographerCompat.FrameCallback>[] mCallbackQueues;
 
   private int mTotalCallbacks = 0;
   private boolean mHasPostedCallback = false;
 
   private ReactChoreographer() {
-    mChoreographer = Choreographer.getInstance();
-    mReactChoreographerDispatcher = new ReactChoreographerDispatcher();
+    mChoreographer = ChoreographerCompat.getInstance();
+    mReactChoreographerDispatcher = new ChoreographerCompat.FrameCallback() {
+      @Override
+      public void doFrame(long frameTimeNanos) {
+        mHasPostedCallback = false;
+        for (int i = 0; i < mCallbackQueues.length; i++) {
+          int initialLength = mCallbackQueues[i].size();
+          for (int callback = 0; callback < initialLength; callback++) {
+            mCallbackQueues[i].removeFirst().doFrame(frameTimeNanos);
+            mTotalCallbacks--;
+          }
+        }
+        maybeRemoveFrameCallback();
+      }
+    };
     mCallbackQueues = new ArrayDeque[CallbackType.values().length];
     for (int i = 0; i < mCallbackQueues.length; i++) {
       mCallbackQueues[i] = new ArrayDeque<>();
     }
   }
 
-  public void postFrameCallback(CallbackType type, Choreographer.FrameCallback frameCallback) {
+  public void postFrameCallback(CallbackType type, ChoreographerCompat.FrameCallback frameCallback) {
     UiThreadUtil.assertOnUiThread();
     mCallbackQueues[type.getOrder()].addLast(frameCallback);
     mTotalCallbacks++;
@@ -96,7 +110,7 @@ public class ReactChoreographer {
     }
   }
 
-  public void removeFrameCallback(CallbackType type, Choreographer.FrameCallback frameCallback) {
+  public void removeFrameCallback(CallbackType type, ChoreographerCompat.FrameCallback frameCallback) {
     UiThreadUtil.assertOnUiThread();
     if (mCallbackQueues[type.getOrder()].removeFirstOccurrence(frameCallback)) {
       mTotalCallbacks--;
@@ -111,22 +125,6 @@ public class ReactChoreographer {
     if (mTotalCallbacks == 0 && mHasPostedCallback) {
       mChoreographer.removeFrameCallback(mReactChoreographerDispatcher);
       mHasPostedCallback = false;
-    }
-  }
-
-  private class ReactChoreographerDispatcher implements Choreographer.FrameCallback {
-
-    @Override
-    public void doFrame(long frameTimeNanos) {
-      mHasPostedCallback = false;
-      for (int i = 0; i < mCallbackQueues.length; i++) {
-        int initialLength = mCallbackQueues[i].size();
-        for (int callback = 0; callback < initialLength; callback++) {
-          mCallbackQueues[i].removeFirst().doFrame(frameTimeNanos);
-          mTotalCallbacks--;
-        }
-      }
-      maybeRemoveFrameCallback();
     }
   }
 }

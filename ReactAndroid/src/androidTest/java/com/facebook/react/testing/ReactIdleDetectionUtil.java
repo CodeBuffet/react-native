@@ -18,6 +18,7 @@ import android.view.Choreographer;
 
 import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.UiThreadUtil;
+import com.facebook.react.common.ChoreographerCompat;
 
 public class ReactIdleDetectionUtil {
 
@@ -56,8 +57,8 @@ public class ReactIdleDetectionUtil {
         new Runnable() {
           @Override
           public void run() {
-            Choreographer.getInstance().postFrameCallback(
-                new Choreographer.FrameCallback() {
+            ChoreographerCompat.getInstance().postFrameCallback(
+                new ChoreographerCompat.FrameCallback() {
 
                   private int frameCount = 0;
 
@@ -67,7 +68,7 @@ public class ReactIdleDetectionUtil {
                     if (frameCount == waitFrameCount) {
                       latch.countDown();
                     } else {
-                      Choreographer.getInstance().postFrameCallback(this);
+                      ChoreographerCompat.getInstance().postFrameCallback(this);
                     }
                   }
                 });

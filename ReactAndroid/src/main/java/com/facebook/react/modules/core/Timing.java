@@ -29,6 +29,7 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.WritableArray;
+import com.facebook.react.common.ChoreographerCompat;
 import com.facebook.react.common.SystemClock;
 import com.facebook.react.uimanager.ReactChoreographer;
 
@@ -60,8 +61,11 @@ public final class Timing extends ReactContextBaseJavaModule implements Lifecycl
     }
   }
 
-  private class FrameCallback implements Choreographer.FrameCallback {
-
+  private final Object mTimerGuard = new Object();
+  private final PriorityQueue<Timer> mTimers;
+  private final HashMap<ExecutorToken, SparseArray<Timer>> mTimerIdsToTimers;
+  private final AtomicBoolean isPaused = new AtomicBoolean(true);
+  private final ChoreographerCompat.FrameCallback mFrameCallback = new ChoreographerCompat.FrameCallback() {
     // Temporary map for constructing the individual arrays of timers per ExecutorToken
     private final HashMap<ExecutorToken, WritableArray> mTimersToCall = new HashMap<>();
 
@@ -95,20 +99,14 @@ public final class Timing extends ReactContextBaseJavaModule implements Lifecycl
 
       for (Map.Entry<ExecutorToken, WritableArray> entry : mTimersToCall.entrySet()) {
         getReactApplicationContext().getJSModule(entry.getKey(), JSTimersExecution.class)
-            .callTimers(entry.getValue());
+          .callTimers(entry.getValue());
       }
       mTimersToCall.clear();
 
       Assertions.assertNotNull(mReactChoreographer)
-          .postFrameCallback(ReactChoreographer.CallbackType.TIMERS_EVENTS, this);
+        .postFrameCallback(ReactChoreographer.CallbackType.TIMERS_EVENTS, this);
     }
-  }
-
-  private final Object mTimerGuard = new Object();
-  private final PriorityQueue<Timer> mTimers;
-  private final HashMap<ExecutorToken, SparseArray<Timer>> mTimerIdsToTimers;
-  private final AtomicBoolean isPaused = new AtomicBoolean(true);
-  private final FrameCallback mFrameCallback = new FrameCallback();
+  };
   private @Nullable ReactChoreographer mReactChoreographer;
   private boolean mFrameCallbackPosted = false;
 

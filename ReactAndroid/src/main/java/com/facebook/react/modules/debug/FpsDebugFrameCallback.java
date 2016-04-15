@@ -18,6 +18,7 @@ import android.annotation.TargetApi;
 import android.view.Choreographer;
 
 import com.facebook.react.bridge.ReactContext;
+import com.facebook.react.common.ChoreographerCompat;
 import com.facebook.react.uimanager.UIManagerModule;
 import com.facebook.infer.annotation.Assertions;
 
@@ -34,7 +35,7 @@ import com.facebook.infer.annotation.Assertions;
  * TargetApi 16 for use of Choreographer.
  */
 @TargetApi(16)
-public class FpsDebugFrameCallback implements Choreographer.FrameCallback {
+public class FpsDebugFrameCallback extends ChoreographerCompat.FrameCallback {
 
   public static class FpsInfo {
 
@@ -66,7 +67,7 @@ public class FpsDebugFrameCallback implements Choreographer.FrameCallback {
 
   private static final double EXPECTED_FRAME_TIME = 16.9;
 
-  private final Choreographer mChoreographer;
+  private final ChoreographerCompat mChoreographer;
   private final ReactContext mReactContext;
   private final UIManagerModule mUIManagerModule;
   private final DidJSUpdateUiDuringFrameDetector mDidJSUpdateUiDuringFrameDetector;
@@ -81,7 +82,7 @@ public class FpsDebugFrameCallback implements Choreographer.FrameCallback {
   private boolean mIsRecordingFpsInfoAtEachFrame = false;
   private @Nullable TreeMap<Long, FpsInfo> mTimeToFps;
 
-  public FpsDebugFrameCallback(Choreographer choreographer, ReactContext reactContext) {
+  public FpsDebugFrameCallback(ChoreographerCompat choreographer, ReactContext reactContext) {
     mChoreographer = choreographer;
     mReactContext = reactContext;
     mUIManagerModule = reactContext.getNativeModule(UIManagerModule.class);
