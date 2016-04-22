@@ -22,6 +22,7 @@ import com.facebook.react.bridge.JSApplicationCausedNativeException;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.common.ChoreographerCompat;
 import com.facebook.react.common.ReactConstants;
 
 /**
@@ -58,7 +59,7 @@ public class AnimationsDebugModule extends ReactContextBaseJavaModule {
     checkAPILevel();
 
     mFrameCallback = new FpsDebugFrameCallback(
-                          Choreographer.getInstance(),
+                          ChoreographerCompat.getInstance(),
                           getReactApplicationContext());
     mFrameCallback.startAndRecordFpsAtEachFrame();
   }

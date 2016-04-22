@@ -350,7 +350,9 @@ import static com.facebook.react.bridge.ReactMarkerConstants.RUN_JS_BUNDLE_START
         screenDisplayMetrics.widthPixels = (Integer) mGetRawW.invoke(display);
         screenDisplayMetrics.heightPixels = (Integer) mGetRawH.invoke(display);
       } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
-        throw new RuntimeException("Error getting real dimensions for API level < 17", e);
+        screenDisplayMetrics.widthPixels = display.getWidth();
+        screenDisplayMetrics.heightPixels = display.getHeight();
+        //throw new RuntimeException("Error getting real dimensions for API level < 17", e);
       }
     }
     DisplayMetricsHolder.setScreenDisplayMetrics(screenDisplayMetrics);
